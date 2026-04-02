@@ -78,17 +78,30 @@ const loginForm = reactive<Omit<formType, "confirmPassword">>({
 const onSubmit = async (event: FormSubmitEvent<Schema>) => {
   const parsedInfo = v.parse(loginSchema, event.data);
   try {
-    await supabase.auth.signInWithPassword({
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.signInWithPassword({
       email: parsedInfo.email,
       password: parsedInfo.password,
     });
-    toast.add({
-      title: "Login succesfully!",
-      description: "Welcome123",
-      color: "success",
-    });
 
-    await navigateTo("/dashboard");
+    if (error) {
+      toast.add({
+        title: "Login Failed",
+        description: error.message, // Show the actual error
+        color: "error",
+      });
+      return;
+    }
+    if (user) {
+      toast.add({
+        title: "Login succesfully!",
+        description: "Welcome123",
+        color: "success",
+      });
+      await navigateTo("/dashboard", { replace: true });
+    }
   } catch (e) {
     toast.add({
       title: "Failed Account Creation!",

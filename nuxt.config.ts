@@ -14,12 +14,19 @@ export default defineNuxtConfig({
       // Public routes
       exclude: ["/", "/register"],
     },
+    redirect: false,
+    types: "./database.types.ts",
     url: process.env.SUPABASE_URL,
     key: process.env.SUPABASE_PUBLISHABLE_KEY,
+    secretKey: process.env.SUPABASE_SERVICE_ROLE,
   },
 
   // Handle auto imports
   imports: {
-    dirs: ["app/composables/**", "composables"],
+    dirs: [
+      "app/composables/**",
+      "composables",
+      "node_modules/@tanstack/vue-query",
+    ],
   },
 });

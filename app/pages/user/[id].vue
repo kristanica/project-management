@@ -1,5 +1,5 @@
 <template>
-  <div>dynamic!</div>
+  <div>dynamic! {{ route.params.id }}</div>
 </template>
 
 <script setup lang="ts">

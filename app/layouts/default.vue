@@ -194,7 +194,7 @@ const userItems = computed<DropdownMenuItem[][]>(() => [
         />
       </div>
 
-      <div class="flex-1 p-4">
+      <div class="flex-1 p-4 overflow-hidden">
         <slot></slot>
       </div>
     </div>
