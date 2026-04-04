@@ -1,11 +1,15 @@
 <template>
   <div>
-    <Header v-if="data" :title="data?.title" @open-modal="openModal"></Header>
+    <Header
+      v-if="boardData"
+      :title="boardData?.title"
+      @open-modal="openModal"
+    ></Header>
     <div v-else>Loading...</div>
   </div>
 
-  <div :class="['grid gap-5 mt-5', `grid-cols-${data?.columns?.length || 1}`]">
-    <UCard v-for="column in data?.columns">
+  <div :class="['grid gap-5 mt-5', `grid-cols-5 }`]">
+    <UCard v-for="column in boardData?.columns">
       <template #header :key="column.id">
         {{ column.title }}
       </template>
@@ -13,27 +17,52 @@
       <h1>body!</h1>
 
       <template #footer>
-        <UButton class="w-full flex items-center justify-center"
+        <UButton
+          class="w-full flex items-center justify-center"
+          @click="
+            openTaskModal({
+              columnTitle: column.title,
+              boardId: boardData?.id || 0,
+              columnId: column.id,
+            })
+          "
           >Add a task</UButton
         >
       </template>
     </UCard>
   </div>
 
-  <UModal :dismissible="true" v-model:open="toggleModal">
+  <UModal :dismissible="true" v-model:open="toggleAddColumnModal">
     <template #header>
       <div class="block">
         <h1 class="text-xl font-bold">Create a new Column</h1>
         <p class="text-sm">
-          Create a new Column for the board: <i>{{ data?.title }}</i>
+          Create a new Column for the board: <i>{{ boardData?.title }}</i>
         </p>
       </div>
     </template>
     <template #body>
       <Addcolumnform
-        :is-pending="isPending"
+        :isColumnPending="isColumnPending"
         @on-submit="onSubmitColumn"
       ></Addcolumnform>
+    </template>
+  </UModal>
+
+  <UModal :dismissible="true" v-model:open="toggleAddTaskModal">
+    <template #header>
+      <div class="block">
+        <h1 class="text-xl font-bold">Create a new Column</h1>
+        <p class="text-sm">
+          Create a new task for the column: <i>{{ selectedColumn.title }}</i>
+        </p>
+      </div>
+    </template>
+    <template #body>
+      <Addtaskfrom
+        :isTaskPending="isTaskPending"
+        @on-submit="onSubmitTask"
+      ></Addtaskfrom>
     </template>
   </UModal>
 </template>
@@ -44,64 +73,54 @@ import Header from "~/components/Board/header.vue";
 import * as v from "valibot";
 import Addcolumnform from "~/components/Board/addcolumnform.vue";
 
-const route = useRoute();
-const toggleModal = ref<boolean>(false);
-const openModal = () => {
-  toggleModal.value = true;
+import { TaskSchema } from "~/../schema/task.schema";
+import { useFetchBoard } from "~/composables/queries/useFetchBoard";
+import { useAddColumnToBoard } from "~/composables/queries/useAddColumnToBoard";
+import Addtaskfrom from "~/components/Board/addtaskfrom.vue";
+import { useAddTask } from "~/composables/queries/useAddTask";
+
+type SelectedColumn = {
+  columnTitle: string;
+  columnId: number;
+  boardId: number;
 };
+
+const route = useRoute();
+const selectedColumn = reactive({
+  title: "",
+  columnId: 0,
+  boardId: 0,
+});
+const toggleAddColumnModal = ref<boolean>(false);
+const toggleAddTaskModal = ref<boolean>(false);
+
+const openModal = () => {
+  toggleAddColumnModal.value = true;
+};
+const openTaskModal = ({ columnTitle, columnId, boardId }: SelectedColumn) => {
+  selectedColumn.title = columnTitle;
+  selectedColumn.columnId = columnId;
+  selectedColumn.boardId = boardId;
+  toggleAddTaskModal.value = true;
+};
+
+const projectId = computed(() => Number(route.params.id) || "");
 
 useHead(() => {
   return {
-    title: String(route.params.id),
+    title: String(projectId.value),
   };
 });
 
-// Validate response
-const BoardSchema = v.object({
-  title: v.string(),
-  created_at: v.string(),
-  id: v.number(),
-  project_id: v.number(),
-  tasks: v.array(
-    v.object({
-      id: v.number(),
-      title: v.string(),
-      description: v.string(),
-      priority: v.string(),
-    }),
-  ),
-  columns: v.array(
-    v.object({
-      id: v.number(),
-      title: v.string(),
-    }),
-  ),
-});
-
-const { data } = useQuery({
-  queryKey: ["project" + route.params.id],
-  queryFn: async (): Promise<Board> => {
-    const res = await $fetch<ServerResponseSucceed<Board>>(
-      `/api/board/board?project_id=${route.params.id}`,
-      {
-        method: "GET",
-      },
-    );
-
-    if (res.statusCode !== 200) {
-      return [] as unknown as Board;
-    }
-
-    const validated = v.safeParse(BoardSchema, res.data);
-    if (!validated.success) {
-      console.error("Validation failed:", validated.issues);
-      throw new Error("Invalid API response format");
-    }
-    return validated.output;
-  },
-
-  enabled: !!route.params.id,
-  staleTime: 10 * 60 * 1000,
+const { data: boardData } = useQuery(useFetchBoard(Number(projectId.value)));
+const {
+  isPending: isColumnPending,
+  mutate: submitColumn,
+  data: columnResponse,
+} = useAddColumnToBoard({
+  boardId: boardData.value?.id,
+  projectId: Number(projectId.value),
+  toggleAddColumnModal: toggleAddColumnModal,
 });
 
 const { onError } = useOnError();
@@ -118,44 +137,23 @@ const onSubmitColumn = (title: string) => {
     onError({ errors: validated.issues });
     return;
   }
-
   submitColumn(validated.output);
 };
 
-const queryClient = useQueryClient();
-const { manualError, manualSucceed } = useOnError();
-const { isPending, mutate: submitColumn } = useMutation({
-  mutationFn: async (title: string): Promise<Columns> => {
-    const res = await $fetch<ServerResponseSucceed<Columns>>(
-      "/api/column/column",
-      {
-        method: "post",
-        body: {
-          board_id: data.value?.id,
-          title: title,
-        },
-      },
-    );
+const onSubmitTask = (form: AddTask) => {
+  const validated = v.safeParse(TaskSchema, form);
+  if (!validated.success) {
+    onError({ erros: validated.issues });
+    return;
+  }
 
-    if (res.statusCode !== 200) {
-      throw new Error("Failed to retrieve");
-    }
+  addTask({ ...validated.output });
+};
 
-    return {
-      id: res.data.id,
-      title: res.data.title,
-    };
-  },
-  mutationKey: ["create column"],
-  onError: (e) => {
-    manualError(e.message);
-  },
-  onSuccess: () => {
-    manualSucceed("Column added");
-
-    queryClient.invalidateQueries({ queryKey: ["project" + route.params.id] });
-    toggleModal.value = false;
-  },
+const { mutate: addTask, isPending: isTaskPending } = useAddTask({
+  columnId: selectedColumn.columnId,
+  boardId: selectedColumn.boardId,
+  projectId: Number(projectId.value),
 });
 </script>
 

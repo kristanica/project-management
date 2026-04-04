@@ -4,7 +4,7 @@ import type { FormSubmitEvent } from "@nuxt/ui";
 const emit = defineEmits<{
   onSubmit: [title: string];
 }>();
-const { isPending } = defineProps<{ isPending: boolean }>();
+const { isColumnPending } = defineProps<{ isColumnPending: boolean }>();
 
 const title = ref<string>();
 
@@ -23,7 +23,7 @@ const onSubmit = (e: FormSubmitEvent<any>) => {
     </UFormField>
 
     <UButton
-      :disabled="isPending"
+      :disabled="isColumnPending"
       variant="solid"
       class="flex items-center justify-center"
       type="submit"

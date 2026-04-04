@@ -3,6 +3,6 @@ type Board = {
   created_at: string;
   id: number;
   project_id: number;
-  tasks: Task[];
+  tasks: Omit<Task, "column_id", "project_id", "board_id">[];
   title: string;
 };
