@@ -6,8 +6,12 @@ export default defineNuxtRouteMiddleware(
     from: RouteLocationNormalizedGeneric,
   ) => {
     const user = useSupabaseUser();
+
     if (["/", "/register", "/login"].includes(to.path)) {
-      if (user.value && (to.path === "/login" || to.path === "/register")) {
+      if (
+        user.value &&
+        (to.path === "/login" || to.path === "/register" || "/")
+      ) {
         return navigateTo("/dashboard");
       }
       return;

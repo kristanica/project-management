@@ -57,7 +57,7 @@
       <div class="grid grid-cols-2 gap-5 mt-10">
         <NuxtLink
           v-for="value in projectList?.projectList || []"
-          :to="{ name: 'user-id', params: { id: value.id } }"
+          :to="{ name: 'project-id', params: { id: value.id } }"
           :key="value.id"
         >
           <UPageCard

@@ -4,9 +4,8 @@ import {
 } from "#supabase/server";
 
 import { ProjectSchema } from "~/../schema/project.schema";
-import type { Database } from "~/../database.types";
 import { safeParse } from "valibot";
-
+import { Database } from "~/../database.types";
 export default defineEventHandler(async (event) => {
   const user = await serverSupabaseUser(event);
 
@@ -31,21 +30,16 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const { data, error } = await client
-    .from("projects")
-    .insert({
-      title: result.output.title,
-      description: result.output.description,
-      user_id: user.sub,
-    })
-    .select()
-    .single();
-  if (error) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: String(error.message),
-    });
-  }
+  // create is from supabase function
+  const { data, error } = await client.rpc("create_project_with_board", {
+    b_title: result.output.title,
+    p_description: result.output.description,
+    p_title: result.output.title,
+    p_user_id: user.sub,
+  });
+
+  if (error)
+    throw createError({ statusCode: 400, statusMessage: error.message });
 
   return { data, statusCode: 200, statusMessage: "Project Created" };
 });
