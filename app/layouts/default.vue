@@ -35,22 +35,10 @@ const selectedTeam = ref(teams.value[0]);
 function getItems(state: "collapsed" | "expanded") {
   return [
     {
-      label: "Inbox",
+      label: "Dashboard",
       icon: "i-lucide-inbox",
-      badge: "4",
-    },
-    {
-      label: "Issues",
-      icon: "i-lucide-square-dot",
-    },
-    {
-      label: "Activity",
-      icon: "i-lucide-square-activity",
-    },
-    {
-      label: "Settings",
-      icon: "i-lucide-settings",
-      defaultOpen: true,
+
+      to: "/dashboard",
     },
   ] satisfies NavigationMenuItem[];
 }

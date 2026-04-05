@@ -8,29 +8,66 @@
     <div v-else>Loading...</div>
   </div>
 
-  <div :class="['grid gap-5 mt-5', `grid-cols-5 }`]">
-    <UCard v-for="column in boardData?.columns">
-      <template #header :key="column.id">
-        {{ column.title }}
-      </template>
+  <ClientOnly>
+    <draggable
+      :v-model="boardDataBind ?? []"
+      tag="transition-group"
+      class="flex gap-6 items-start overflow-x-auto pb-4 w-full"
+      :component-data="{
+        tag: 'div',
+        type: 'transition',
+        name: 'fade',
+      }"
+      :animation="200"
+    >
+      <UCard
+        v-for="column in boardDataBind?.columns ?? []"
+        :key="column.id"
+        class="min-w-[300px] w-[300px] flex-shrink-0"
+      >
+        <template #header>
+          {{ column.title }}
+        </template>
 
-      <h1>body!</h1>
-
-      <template #footer>
-        <UButton
-          class="w-full flex items-center justify-center"
-          @click="
-            openTaskModal({
-              columnTitle: column.title,
-              boardId: boardData?.id || 0,
-              columnId: column.id,
-            })
-          "
-          >Add a task</UButton
+        <div
+          v-if="column.tasks?.length > 0"
+          v-for="task in column.tasks"
+          class="my-2 cursor-move"
+          :key="task.id"
         >
-      </template>
-    </UCard>
-  </div>
+          <UCard>
+            <template #header>
+              <h1>{{ task.title }}</h1>
+            </template>
+
+            <h1>{{ task.description }}</h1>
+
+            <template #footer>
+              {{ task.priority }}
+              {{ task.status }}
+            </template>
+          </UCard>
+        </div>
+
+        <div v-else class="text-gray-400 text-sm italic py-2">No tasks yet</div>
+
+        <template #footer>
+          <UButton
+            class="w-full flex items-center justify-center"
+            @click="
+              openTaskModal({
+                columnTitle: column.title,
+                boardId: boardDataBind?.id || 0,
+                columnId: column.id,
+              })
+            "
+          >
+            Add a task
+          </UButton>
+        </template>
+      </UCard>
+    </draggable>
+  </ClientOnly>
 
   <UModal :dismissible="true" v-model:open="toggleAddColumnModal">
     <template #header>
@@ -68,7 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
+import { useQuery } from "@tanstack/vue-query";
 import Header from "~/components/Board/header.vue";
 import * as v from "valibot";
 import Addcolumnform from "~/components/Board/addcolumnform.vue";
@@ -78,6 +115,7 @@ import { useFetchBoard } from "~/composables/queries/useFetchBoard";
 import { useAddColumnToBoard } from "~/composables/queries/useAddColumnToBoard";
 import Addtaskfrom from "~/components/Board/addtaskfrom.vue";
 import { useAddTask } from "~/composables/queries/useAddTask";
+import { VueDraggableNext as draggable } from "vue-draggable-next";
 
 type SelectedColumn = {
   columnTitle: string;
@@ -147,14 +185,46 @@ const onSubmitTask = (form: AddTask) => {
     return;
   }
 
-  addTask({ ...validated.output });
+  addTask({
+    ...validated.output,
+    columnId: selectedColumn.columnId,
+    boardId: selectedColumn.boardId,
+    projectId: Number(projectId.value),
+  });
 };
 
-const { mutate: addTask, isPending: isTaskPending } = useAddTask({
-  columnId: selectedColumn.columnId,
-  boardId: selectedColumn.boardId,
-  projectId: Number(projectId.value),
+const { mutate: addTask, isPending: isTaskPending } = useAddTask(
+  Number(projectId.value),
+);
+
+const boardDataBind = ref<Board>();
+
+watch(boardData, () => {
+  if (boardData.value) {
+    console.log("hellO!");
+    boardDataBind.value = boardData.value;
+  }
 });
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.fade-item {
+  padding: 15px;
+  margin: 8px 0;
+  background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+</style>

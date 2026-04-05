@@ -21,6 +21,8 @@ export const useFetchBoard = (projectId: number) =>
         console.error("Validation failed:", validated.issues);
         throw new Error("Invalid API response format");
       }
+
+      console.log(validated.output);
       return validated.output;
     },
     enabled: !!projectId,

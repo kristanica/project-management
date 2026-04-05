@@ -6,15 +6,36 @@ type UseAddTask = {
   projectId: number;
 };
 
-export const useAddTask = ({ boardId, columnId, projectId }: UseAddTask) => {
+export const useAddTask = (projectId: number) => {
   const qc = useQueryClient();
 
+  const { manualError } = useOnError();
   return useMutation({
-    mutationKey: ["addTask" + projectId, columnId, boardId],
-    mutationFn: async ({ title, description }: AddTask) => {
-      console.log(title, description, projectId, boardId);
+    mutationKey: ["addTask"],
+    mutationFn: async (task: AddTask & UseAddTask): Promise<Task> => {
+      const res = await $fetch<ServerResponseSucceed<Task>>("/api/task/task", {
+        method: "POST",
+        body: {
+          ...task,
+        },
+      });
+
+      if (res.statusCode !== 200) {
+        console.log(res.statusCode);
+        throw new Error(String(res.data));
+      }
+      return {
+        id: res.data.id,
+        title: res.data.title,
+        description: res.data.description,
+        priority: res.data.priority,
+        status: res.data.status,
+      };
     },
-    onError: () => {},
+    onError: (e) => {
+      console.log(String(e));
+      manualError(String(e.message));
+    },
 
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["project" + projectId] });

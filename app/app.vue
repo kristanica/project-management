@@ -11,8 +11,7 @@
 import { useIsFetching, useIsMutating } from "@tanstack/vue-query";
 
 const route = useRoute();
-const config = useRuntimeConfig();
-console.log(config.public);
+
 const isMutating = useIsMutating();
 const isFetching = useIsFetching();
 useHead(() => {

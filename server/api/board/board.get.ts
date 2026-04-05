@@ -7,7 +7,9 @@ export default defineEventHandler(
     const client = await serverSupabaseClient(event);
     const { data, error } = await client
       .from("boards")
-      .select("*,columns(id,title),tasks(id,title,description,priority)")
+      .select(
+        "*,columns(id,title, tasks(id,column_id,title,description,priority, status))",
+      )
       .eq("project_id", projectId)
       .single()
       .overrideTypes<Board[]>();
