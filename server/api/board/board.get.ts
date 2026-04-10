@@ -15,6 +15,9 @@ export default defineEventHandler(
           created_at: true,
           project_id: true,
           columns: {
+            orderBy: {
+              order: "asc",
+            },
             select: {
               id: true,
               title: true,

@@ -120,6 +120,7 @@ import { useAddColumnToBoard } from "~/composables/queries/useAddColumnToBoard";
 import Addtaskfrom from "~/components/Board/addtaskfrom.vue";
 import { useAddTask } from "~/composables/queries/useAddTask";
 import { VueDraggable, type DraggableEvent } from "vue-draggable-plus";
+import useReorderColumn from "~/composables/mutations/useReorderColumn";
 
 type SelectedColumn = {
   columnTitle: string;
@@ -211,35 +212,28 @@ const { isPending: isColumnPending, mutate: submitColumn } =
     toggleAddColumnModal: toggleAddColumnModal,
   });
 
+const reOrderMutation = useReorderColumn();
+
 const test = (e: DraggableEvent) => {
   if (e.oldIndex == null || e.newIndex == null) return;
+  if (e.oldIndex === e.newIndex) return;
   if (!boardData.value || boardData.value?.columns.length === 0) return;
 
   const oldTmp = boardData.value.columns[e.oldIndex];
   const newTmp = boardData.value.columns[e.newIndex];
 
   const oldCol = {
-    id: oldTmp?.id,
-    order: newTmp?.order,
-    title: newTmp?.title,
+    id: oldTmp?.id || 0,
+    order: newTmp?.order || 0,
+    title: newTmp?.title || 0,
   };
 
   const newCol = {
-    id: newTmp?.id,
-    order: oldTmp?.order,
-    title: oldTmp?.title,
+    id: newTmp?.id || 0,
+    order: oldTmp?.order || 0,
+    title: oldTmp?.title || 0,
   };
-  boardDataBind.value?.columns?.forEach((column, index) => {
-    console.log(
-      column.id,
-      "new index:",
-      index,
-      "current order:",
-      column.order,
-      "title:",
-      column.title,
-    );
-  });
+  reOrderMutation.mutate({ oldCol: oldCol, newCol: newCol });
 };
 
 useHead(() => {

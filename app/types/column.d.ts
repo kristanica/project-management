@@ -11,3 +11,13 @@ type AddColumnToBoard = {
   // boardId: number | undefined;
   projectId: number | undefined;
 };
+
+type ReOrderValue = {
+  id: number;
+  order: number;
+};
+
+type ReOrder = {
+  oldCol: ReOrderValue;
+  newCol: ReOrderValue;
+};

@@ -1,5 +1,9 @@
 <template>
-  <UProgress color="primary" size="xs" v-if="isMutating || isFetching" />
+  <UProgress
+    color="primary"
+    size="xs"
+    v-if="isFetching || (isMutating > 0 && isReordering === 0)"
+  />
 
   <NuxtLayout>
     <UApp>
@@ -14,6 +18,9 @@ const route = useRoute();
 
 const isMutating = useIsMutating();
 const isFetching = useIsFetching();
+const isReordering = useIsMutating({
+  mutationKey: ["reorder-column"],
+});
 useHead(() => {
   const pageTitle = route.meta.title as string | undefined;
   return {
