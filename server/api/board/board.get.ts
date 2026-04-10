@@ -22,7 +22,7 @@ export default defineEventHandler(
               id: true,
               title: true,
               order: true,
-              task: {
+              tasks: {
                 select: {
                   id: true,
                   column_id: true,

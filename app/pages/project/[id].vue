@@ -2,7 +2,7 @@
   <div>
     <Header
       v-if="boardData"
-      :title="String(boardData?.id)"
+      :title="boardData.title"
       @open-modal="openModal"
     ></Header>
     <div v-else>Loading...</div>
@@ -13,13 +13,13 @@
       @end="test"
       v-if="boardDataBind?.columns"
       v-model="boardDataBind.columns"
-      class="flex flex-row gap-5 mt-5"
+      class="flex flex-row gap-5 mt-5 items-start"
       item-key="id"
       :animation="300"
     >
       <div
         :key="column.id"
-        class="min-w-75 w-contain border rounded-md p-3 border-muted"
+        class="min-w-75 h-contain w-contain border rounded-md p-3 border-muted"
         v-for="column in boardDataBind.columns"
       >
         <h1 class="text-2xl font-bold text-center my-2">

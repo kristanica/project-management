@@ -12,9 +12,9 @@ model projects {
   description String
   user_id     String   @db.Uuid
   created_at  DateTime @default(now())
-  board boards[]
-  task tasks[]
-  comment comments[]
+  boards boards[]
+  tasks tasks[]
+  comments comments[]
 
   project_members project_members[]
 }
@@ -35,7 +35,7 @@ model columns {
   board_id Int
   created_at DateTime @default(now())
   board boards @relation(fields: [board_id], references: [id], onDelete: Cascade)
-  task tasks[]
+  tasks tasks[]
 }
 
 model tasks {

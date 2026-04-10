@@ -30,7 +30,7 @@ export default defineEventHandler(
         data: {
           title: validated.output.title,
           board_id: validated.output.board_id,
-          order: validated.output.order + 1,
+          order: validated.output.order,
         },
       });
 
