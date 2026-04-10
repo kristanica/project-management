@@ -1,5 +1,5 @@
 type ServerResponseSucceed<T> = {
-  data: T;
+  data: T | null;
   statusCode: number;
   title: string;
   // If response must be paginated
@@ -9,5 +9,5 @@ type ServerResponseSucceed<T> = {
 type ServerResponseFail = {
   title: string;
   statusCode: number;
-  data: string;
+  data: T;
 };

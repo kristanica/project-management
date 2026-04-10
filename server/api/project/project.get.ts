@@ -1,33 +1,49 @@
-import { serverSupabaseClient, serverSupabaseUser } from "#supabase/server";
+import { serverSupabaseUser } from "#supabase/server";
+import { Prisma } from "@prisma/client";
+import { prisma, toSafeData } from "~~/server/utils/prisma";
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const currentPage = Number(query.page) | 1;
   const user = await serverSupabaseUser(event);
-  const client = await serverSupabaseClient(event);
 
-  const postPerPage = 6;
-  const from = (currentPage - 1) * currentPage;
-  const to = from + postPerPage - 1;
-  const { data, error, count } = await client
-    .from("projects")
-    .select("id,title,description,status", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range(from, to)
-    .eq("user_id", String(user?.sub));
+  try {
+    const postPerPage = 6;
+    const from = (currentPage - 1) * currentPage;
+    const to = from + postPerPage - 1;
 
-  if (error) {
+    const [data, count] = await Promise.all([
+      prisma.projects.findMany({
+        where: { user_id: String(user?.sub) },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+        },
+        orderBy: { created_at: "desc" },
+        skip: from,
+        take: to - from + 1,
+      }),
+      prisma.projects.count({
+        where: { user_id: String(user?.sub) },
+      }),
+    ]);
+    const safeData = toSafeData(data);
     return {
-      title: error.name,
-      statusCode: error.code,
-      data: error.message,
+      title: "Data retrieved",
+      data: safeData,
+      pages: count,
+      statusCode: 200,
     };
-  }
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      console.error("Prisma request error:", error.code, error.message);
 
-  return {
-    title: "Data retrieved",
-    data: data,
-    pages: count,
-    statusCode: 200,
-  };
+      return {
+        title: error.name,
+        statusCode: error.code,
+        data: error.message,
+      };
+    }
+  }
 });

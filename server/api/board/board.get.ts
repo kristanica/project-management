@@ -1,31 +1,52 @@
-import { serverSupabaseClient } from "#supabase/server";
 export default defineEventHandler(
   async (event): Promise<ServerResponseSucceed<Board> | ServerResponseFail> => {
     const query = getQuery(event);
     const projectId = query.project_id as any | 0;
 
-    const client = await serverSupabaseClient(event);
-    const { data, error } = await client
-      .from("boards")
-      .select(
-        "*,columns(id,title, tasks(id,column_id,title,description,priority, status))",
-      )
-      .eq("project_id", projectId)
-      .single()
-      .overrideTypes<Board[]>();
+    try {
+      const data = await prisma.boards.findFirst({
+        where: {
+          project_id: Number(projectId),
+        },
 
-    if (error) {
+        select: {
+          id: true,
+          title: true,
+          created_at: true,
+          project_id: true,
+          columns: {
+            select: {
+              id: true,
+              title: true,
+              order: true,
+              task: {
+                select: {
+                  id: true,
+                  column_id: true,
+                  title: true,
+                  description: true,
+                  priority: true,
+                  status: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const safeData = toSafeData(data);
+
       return {
-        title: error.name,
-        statusCode: Number(error.code),
-        data: error.message,
+        title: "Data retrieved",
+        data: safeData,
+        statusCode: 200,
+      };
+    } catch (e) {
+      return {
+        title: "Data retrieved",
+        data: String(e),
+        statusCode: 200,
       };
     }
-
-    return {
-      title: "Data retrieved",
-      data: data,
-      statusCode: 200,
-    };
   },
 );

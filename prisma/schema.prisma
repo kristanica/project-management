@@ -1,0 +1,94 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+model projects {
+  id          Int   @id @default(autoincrement())
+  title       String
+  description String
+  user_id     String   @db.Uuid
+  created_at  DateTime @default(now())
+  board boards[]
+  task tasks[]
+  comment comments[]
+
+  project_members project_members[]
+}
+model boards {
+  id Int @id @default(autoincrement())
+  title String
+  created_at DateTime @default(now())
+  project_id  Int 
+  project projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  columns columns[]
+  tasks tasks[]
+}
+model columns {
+  id Int @id @default(autoincrement())
+  title String
+  order Int
+  board_id Int
+  created_at DateTime @default(now())
+  board boards @relation(fields: [board_id], references: [id], onDelete: Cascade)
+  task tasks[]
+}
+
+model tasks {
+  id Int @id @default(autoincrement())
+  title String
+  description String
+  order Int
+  priority String
+  status String
+
+  // 
+  project_id Int
+  project projects @relation(fields:[project_id], references: [id], onDelete: Cascade)
+  board_id Int
+  board boards @relation(fields: [board_id], references: [id], onDelete: Cascade)
+  column_id Int
+  column columns @relation(fields: [column_id], references: [id], onDelete: Cascade)
+
+  task_assignees task_assignees[]
+
+}
+
+model project_members {
+  id Int @id @default(autoincrement())
+  joined_at DateTime @default(now())
+  project_id Int
+  project projects @relation(fields: [project_id], references: [id],onDelete: Cascade)
+  user_id  String   @db.Uuid
+
+}
+
+
+model task_assignees {
+  id Int @id @default(autoincrement())
+  user_id        String   @db.Uuid
+  assigned_by_id String   @db.Uuid
+  task_id Int
+  created_at DateTime @default(now())
+  task tasks @relation(fields: [task_id], references: [id], onDelete: Cascade)
+}
+
+
+model comments{
+  id Int @id  @default(autoincrement())
+  created_at DateTime @default(now())
+  comment String
+  project_id Int
+  project projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  assignee_id  String @db.Uuid
+}
+
+
+
+
+
+

@@ -1,11 +1,8 @@
-import {
-  serverSupabaseServiceRole,
-  serverSupabaseUser,
-} from "#supabase/server";
+import { serverSupabaseUser } from "#supabase/server";
 
 import { ProjectSchema } from "~/../schema/project.schema";
 import { safeParse } from "valibot";
-import { Database } from "~/../database.types";
+import { prisma } from "~/../server/utils/prisma";
 export default defineEventHandler(async (event) => {
   const user = await serverSupabaseUser(event);
 
@@ -16,30 +13,45 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const client = serverSupabaseServiceRole<Database>(event);
+  try {
+    const content = await readBody(event);
 
-  const content = await readBody(event);
+    const result = safeParse(ProjectSchema, content);
 
-  const result = safeParse(ProjectSchema, content);
+    if (!result.success) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "Validation Failed",
+        data: result.issues,
+      });
+    }
+    const project = await prisma.projects.create({
+      data: {
+        title: result.output.title,
+        description: result.output.description,
+        user_id: user.sub,
+      },
+    });
 
-  if (!result.success) {
+    await prisma.boards.create({
+      data: {
+        title: project.title,
+        project_id: project.id,
+      },
+    });
+
+    const safeData = toSafeData(project);
+    return {
+      success: true,
+      data: String(safeData),
+    };
+
+    // create is from supabase function
+  } catch (error) {
+    console.log(error);
     throw createError({
-      statusCode: 400,
-      statusMessage: "Validation Failed",
-      data: result.issues,
+      statusCode: 500,
+      statusMessage: "Failed to create project",
     });
   }
-
-  // create is from supabase function
-  const { data, error } = await client.rpc("create_project_with_board", {
-    b_title: result.output.title,
-    p_description: result.output.description,
-    p_title: result.output.title,
-    p_user_id: user.sub,
-  });
-
-  if (error)
-    throw createError({ statusCode: 400, statusMessage: error.message });
-
-  return { data, statusCode: 200, statusMessage: "Project Created" };
 });

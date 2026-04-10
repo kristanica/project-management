@@ -2,71 +2,73 @@
   <div>
     <Header
       v-if="boardData"
-      :title="boardData?.title"
+      :title="String(boardData?.id)"
       @open-modal="openModal"
     ></Header>
     <div v-else>Loading...</div>
   </div>
 
   <ClientOnly>
-    <draggable
-      :v-model="boardDataBind ?? []"
-      tag="transition-group"
-      class="flex gap-6 items-start overflow-x-auto pb-4 w-full"
-      :component-data="{
-        tag: 'div',
-        type: 'transition',
-        name: 'fade',
-      }"
-      :animation="200"
+    <VueDraggable
+      @end="test"
+      v-if="boardDataBind?.columns"
+      v-model="boardDataBind.columns"
+      class="flex flex-row gap-5 mt-5"
+      item-key="id"
+      :animation="300"
     >
-      <UCard
-        v-for="column in boardDataBind?.columns ?? []"
+      <div
         :key="column.id"
-        class="min-w-[300px] w-[300px] flex-shrink-0"
+        class="min-w-75 w-contain border rounded-md p-3 border-muted"
+        v-for="column in boardDataBind.columns"
       >
-        <template #header>
+        <h1 class="text-2xl font-bold text-center my-2">
+          <UIcon name="i-lucide-lightbulb" class="size-5" />
           {{ column.title }}
-        </template>
+        </h1>
 
-        <div
-          v-if="column.tasks?.length > 0"
-          v-for="task in column.tasks"
-          class="my-2 cursor-move"
-          :key="task.id"
+        <UButton
+          class="w-full flex items-center justify-center"
+          @click="
+            openTaskModal({
+              columnTitle: column.title,
+              boardId: boardDataBind?.id || 0,
+              columnId: column.id,
+            })
+          "
         >
-          <UCard>
-            <template #header>
-              <h1>{{ task.title }}</h1>
-            </template>
+          Add a task
+        </UButton>
 
-            <h1>{{ task.description }}</h1>
+        <VueDraggable
+          v-if="column.tasks"
+          v-model="column.tasks"
+          class="flex flex-col"
+          :animation="300"
+          item-key="id"
+        >
+          <div
+            class="my-2 cursor-move bg-white/15 p-2 rounded"
+            :key="task.id"
+            v-for="task in column.tasks"
+          >
+            <div>
+              <div>
+                <h1 class="leading-4 text-xl font-bold">{{ task.title }}</h1>
+                <p class="leading-4">{{ task.description }}</p>
+              </div>
 
-            <template #footer>
-              {{ task.priority }}
-              {{ task.status }}
-            </template>
-          </UCard>
-        </div>
+              <div>
+                {{ task.priority }}
+                {{ task.status }}
+              </div>
+            </div>
+          </div>
+        </VueDraggable>
 
         <div v-else class="text-gray-400 text-sm italic py-2">No tasks yet</div>
-
-        <template #footer>
-          <UButton
-            class="w-full flex items-center justify-center"
-            @click="
-              openTaskModal({
-                columnTitle: column.title,
-                boardId: boardDataBind?.id || 0,
-                columnId: column.id,
-              })
-            "
-          >
-            Add a task
-          </UButton>
-        </template>
-      </UCard>
-    </draggable>
+      </div>
+    </VueDraggable>
   </ClientOnly>
 
   <UModal :dismissible="true" v-model:open="toggleAddColumnModal">
@@ -74,7 +76,8 @@
       <div class="block">
         <h1 class="text-xl font-bold">Create a new Column</h1>
         <p class="text-sm">
-          Create a new Column for the board: <i>{{ boardData?.title }}</i>
+          Create a new Column for the board:
+          <i>{{ boardData?.title }}</i>
         </p>
       </div>
     </template>
@@ -106,16 +109,17 @@
 
 <script setup lang="ts">
 import { useQuery } from "@tanstack/vue-query";
+import { ref, reactive, computed, watch } from "vue";
+import { useRoute } from "vue-router";
 import Header from "~/components/Board/header.vue";
 import * as v from "valibot";
 import Addcolumnform from "~/components/Board/addcolumnform.vue";
-
 import { TaskSchema } from "~/../schema/task.schema";
 import { useFetchBoard } from "~/composables/queries/useFetchBoard";
 import { useAddColumnToBoard } from "~/composables/queries/useAddColumnToBoard";
 import Addtaskfrom from "~/components/Board/addtaskfrom.vue";
 import { useAddTask } from "~/composables/queries/useAddTask";
-import { VueDraggableNext as draggable } from "vue-draggable-next";
+import { VueDraggable, type DraggableEvent } from "vue-draggable-plus";
 
 type SelectedColumn = {
   columnTitle: string;
@@ -142,26 +146,25 @@ const openTaskModal = ({ columnTitle, columnId, boardId }: SelectedColumn) => {
   toggleAddTaskModal.value = true;
 };
 
-const projectId = computed(() => Number(route.params.id) || "");
-
-useHead(() => {
-  return {
-    title: String(projectId.value),
-  };
-});
-
+const boardDataBind = ref<Board>();
+// Computations
+const projectId = computed(() => Number(route.params.id) || 0);
 const { data: boardData } = useQuery(useFetchBoard(Number(projectId.value)));
-const {
-  isPending: isColumnPending,
-  mutate: submitColumn,
-  data: columnResponse,
-} = useAddColumnToBoard({
-  boardId: boardData.value?.id,
-  projectId: Number(projectId.value),
-  toggleAddColumnModal: toggleAddColumnModal,
-});
+
+watch(
+  boardData,
+  (value) => {
+    if (value) {
+      boardDataBind.value = JSON.parse(JSON.stringify(value));
+    }
+  },
+  { immediate: true },
+);
 
 const { onError } = useOnError();
+
+const order = computed(() => boardData.value?.columns.length ?? 0);
+const boardId = computed(() => boardData.value?.id ?? 0);
 const onSubmitColumn = (title: string) => {
   const validated = v.safeParse(
     v.pipe(
@@ -175,7 +178,11 @@ const onSubmitColumn = (title: string) => {
     onError({ errors: validated.issues });
     return;
   }
-  submitColumn(validated.output);
+  submitColumn({
+    title: validated.output,
+    board_id: boardId.value,
+    order: order.value,
+  });
 };
 
 const onSubmitTask = (form: AddTask) => {
@@ -197,34 +204,49 @@ const { mutate: addTask, isPending: isTaskPending } = useAddTask(
   Number(projectId.value),
 );
 
-const boardDataBind = ref<Board>();
+const { isPending: isColumnPending, mutate: submitColumn } =
+  useAddColumnToBoard({
+    projectId: Number(projectId.value),
 
-watch(boardData, () => {
-  if (boardData.value) {
-    console.log("hellO!");
-    boardDataBind.value = boardData.value;
-  }
+    toggleAddColumnModal: toggleAddColumnModal,
+  });
+
+const test = (e: DraggableEvent) => {
+  if (e.oldIndex == null || e.newIndex == null) return;
+  if (!boardData.value || boardData.value?.columns.length === 0) return;
+
+  const oldTmp = boardData.value.columns[e.oldIndex];
+  const newTmp = boardData.value.columns[e.newIndex];
+
+  const oldCol = {
+    id: oldTmp?.id,
+    order: newTmp?.order,
+    title: newTmp?.title,
+  };
+
+  const newCol = {
+    id: newTmp?.id,
+    order: oldTmp?.order,
+    title: oldTmp?.title,
+  };
+  boardDataBind.value?.columns?.forEach((column, index) => {
+    console.log(
+      column.id,
+      "new index:",
+      index,
+      "current order:",
+      column.order,
+      "title:",
+      column.title,
+    );
+  });
+};
+
+useHead(() => {
+  return {
+    title: String(projectId.value),
+  };
 });
 </script>
 
-<style lang="scss" scoped>
-.fade-item {
-  padding: 15px;
-  margin: 8px 0;
-  background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: all 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-  transform: translateX(30px);
-}
-</style>
+<style lang="scss" scoped></style>

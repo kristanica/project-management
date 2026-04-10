@@ -12,18 +12,8 @@ export const useFetchBoard = (projectId: number) =>
         },
       );
 
-      if (res.statusCode !== 200) {
-        return [] as unknown as Board;
-      }
-
-      const validated = safeParse(BoardSchema, res.data);
-      if (!validated.success) {
-        console.error("Validation failed:", validated.issues);
-        throw new Error("Invalid API response format");
-      }
-
-      console.log(validated.output);
-      return validated.output;
+      console.log(res.data);
+      return res.data;
     },
     enabled: !!projectId,
     staleTime: 10 * 60 * 1000,

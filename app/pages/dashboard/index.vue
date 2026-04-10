@@ -115,17 +115,17 @@ const { mutate: createProject, isPending } = useMutation({
       },
     });
 
-    if (res.statusCode !== 200) {
+    if (!res.success) {
       toast.add({
-        title: String(res.statusCode),
-        description: String(res.statusMessage),
+        title: String(res.data),
+        description: String(res.success),
         color: "error",
       });
       return;
     }
     toast.add({
-      title: String(res.statusCode),
-      description: String(res.statusMessage),
+      title: String(res.success),
+      description: String(res.data),
       color: "success",
     });
     showModal.value = false;
