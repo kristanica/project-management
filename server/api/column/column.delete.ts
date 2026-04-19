@@ -24,6 +24,7 @@ export default defineEventHandler(async (event) => {
       return deltmp;
     });
 
+    console.log(column);
     return {
       title: "Column deleted",
       statusCode: 200,

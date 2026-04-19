@@ -1,80 +1,105 @@
 <template>
-  <UContainer class="flex flex-col gap-2 min-h-[30%]">
-    <UCard class="shrink-0">
-      <div class="flex flex-row items-center justify-between">
-        <h1 class="text-4xl font-bold tracking-widest">PROJECTS</h1>
-        <UButton
-          label="Create a Project"
-          color="neutral"
-          variant="subtle"
-          @click="openModal"
-        />
-        <UModal
-          :dismissible="false"
-          title="Create a Project"
-          v-model:open="showModal"
-          description="Create a new project to manage"
+  <UContainer class="flex flex-col gap-6 py-8 min-h-screen">
+    <div
+      class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2"
+    >
+      <div>
+        <h1
+          class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white"
         >
-          <template #body>
-            <UForm
-              @submit="onSubmit"
-              :schema="ProjectSchema"
-              class="flex flex-col gap-5"
-              :state="createProjectForm"
-              @error="onError"
-            >
-              <UFormField label="Project Title">
-                <UInput
-                  icon="i-lucide-user"
-                  class="w-full"
-                  v-model="createProjectForm.title"
-                ></UInput>
-              </UFormField>
-
-              <UFormField label="Description Description">
-                <UInput
-                  icon="i-lucide-user"
-                  class="w-full"
-                  v-model="createProjectForm.description"
-                ></UInput>
-              </UFormField>
-
-              <UButton
-                :disabled="isPending"
-                variant="solid"
-                class="flex items-center justify-center"
-                type="submit"
-              >
-                Create Project
-              </UButton>
-            </UForm>
-          </template>
-        </UModal>
+          Projects
+        </h1>
+        <p class="text-gray-500 dark:text-gray-400 mt-1">
+          Manage and organize your Kanban boards.
+        </p>
       </div>
-    </UCard>
+      <UButton
+        icon="i-lucide-plus"
+        label="Create Project"
+        size="md"
+        @click="openModal"
+      />
+    </div>
 
-    <UContainer class="flex-2">
-      <div class="grid grid-cols-2 gap-5 mt-10">
+    <UModal
+      :dismissible="false"
+      title="Create a Project"
+      v-model:open="showModal"
+      description="Create a new project to manage"
+    >
+      <template #body>
+        <UForm
+          @submit="onSubmit"
+          :schema="ProjectSchema"
+          class="flex flex-col gap-5"
+          :state="createProjectForm"
+          @error="onError"
+        >
+          <UFormField label="Project Title">
+            <UInput
+              icon="i-lucide-folder"
+              class="w-full"
+              v-model="createProjectForm.title"
+            ></UInput>
+          </UFormField>
+
+          <UFormField label="Description">
+            <UInput
+              icon="i-lucide-align-left"
+              class="w-full"
+              v-model="createProjectForm.description"
+            ></UInput>
+          </UFormField>
+
+          <UButton
+            :disabled="isPending"
+            variant="solid"
+            class="flex items-center justify-center w-full mt-2"
+            type="submit"
+          >
+            Create Project
+          </UButton>
+        </UForm>
+      </template>
+    </UModal>
+
+    <div class="w-full">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <NuxtLink
           v-for="value in projectList?.projectList || []"
           :to="{ name: 'project-id', params: { id: value.id } }"
           :key="value.id"
+          class="group transition-transform hover:-translate-y-1 block h-full"
         >
           <UPageCard
-            variant="soft"
+            class="h-full"
             :title="value.title"
             :description="value.description"
-            icon="i-simple-icons-tailwindcss"
-            target="_blank"
+            icon="i-lucide-folder"
           />
         </NuxtLink>
       </div>
-    </UContainer>
 
-    <div class="flex items-center justify-center mt-10 flex-1 0">
+      <div
+        v-if="projectList?.projectList?.length === 0"
+        class="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl"
+      >
+        <UIcon name="i-lucide-folder-open" class="size-12 mb-4 text-gray-400" />
+        <p class="text-lg font-medium text-gray-900 dark:text-white">
+          No projects yet
+        </p>
+        <p class="text-sm text-gray-500 mt-1">
+          Get started by creating your first project.
+        </p>
+      </div>
+    </div>
+
+    <div
+      class="flex items-center justify-center mt-auto pt-8 w-full"
+      v-if="projectList?.totalPages"
+    >
       <UPagination
         v-model:page="page"
-        color="neutral"
         :total="projectList?.totalPages"
         :items-per-page="6"
       />

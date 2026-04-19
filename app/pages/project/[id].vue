@@ -1,100 +1,115 @@
 <template>
-  <div>
+  <div class="flex flex-col h-full min-h-[calc(100vh-4rem)]">
     <Header
       v-if="boardData"
       :title="boardData.title"
       @open-modal="openModal"
     ></Header>
-    <div v-else>Loading...</div>
-  </div>
+    <div v-else class="flex flex-col items-center justify-center flex-1 py-20">
+      <UIcon
+        name="i-lucide-loader-2"
+        class="size-10 animate-spin text-primary-500 mb-4"
+      />
+      <p class="text-gray-500 font-medium">Loading board...</p>
+    </div>
 
-  <ClientOnly>
-    <VueDraggable
-      @end="test"
-      v-if="boardDataBind?.columns"
-      v-model="boardDataBind.columns"
-      class="flex flex-row gap-6 mt-5 items-start overflow-x-auto pb-4"
-      item-key="id"
-      :animation="300"
-    >
-      <div
-        :key="column.id"
-        class="w-80 min-w-80 shrink-0 h-fit flex flex-col gap-3 border rounded-xl p-3 bg-gray-100/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700"
-        v-for="column in boardDataBind.columns"
+    <ClientOnly>
+      <VueDraggable
+        @end="test"
+        v-if="boardDataBind?.columns"
+        v-model="boardDataBind.columns"
+        class="flex flex-row gap-6 mt-5 items-start overflow-x-auto pb-4 flex-1"
+        item-key="id"
+        :animation="300"
+        group="columns"
       >
         <div
-          class="rounded-lg p-3 text-white shadow-sm flex items-center justify-between"
-          :style="{ backgroundColor: column.color }"
-        >
-          <div class="flex items-center gap-2">
-            <UIcon name="i-lucide-lightbulb" class="size-5" />
-            <h1 class="text-lg font-bold">{{ column.title }}</h1>
-          </div>
-          <UButton
-            icon="i-lucide-trash"
-            size="sm"
-            color="info"
-            variant="ghost"
-            class="opacity-75 hover:opacity-100"
-            @click="openDeleteModal(column.id)"
-          />
-        </div>
-
-        <UButton
-          variant="soft"
-          class="w-full flex items-center justify-center border border-dashed border-gray-300 dark:border-gray-600"
-          @click="
-            openTaskModal({
-              columnTitle: column.title,
-              boardId: boardDataBind?.id || 0,
-              columnId: column.id,
-            })
-          "
-        >
-          <UIcon name="i-lucide-plus" class="size-4 mr-1" />
-          Add a task
-        </UButton>
-
-        <VueDraggable
-          v-if="column.tasks"
-          v-model="column.tasks"
-          class="flex flex-col gap-2"
-          :animation="300"
-          item-key="id"
+          :key="column.id"
+          class="w-80 min-w-80 shrink-0 flex flex-col border rounded-xl p-3 bg-gray-100/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 max-h-[calc(100vh-12rem)]"
+          v-for="column in boardDataBind.columns"
         >
           <div
-            class="relative cursor-move bg-white dark:bg-gray-900 shadow-sm border border-gray-200 dark:border-gray-700 p-3 rounded-lg flex flex-col gap-2 hover:border-primary-500 transition-colors"
-            :key="task.id"
-            v-for="task in column.tasks"
+            class="rounded-lg p-3 text-white shadow-sm flex items-center justify-between mb-3"
+            :style="{ backgroundColor: column.color }"
           >
+            <div class="flex items-center gap-2">
+              <UIcon name="i-lucide-lightbulb" class="size-5" />
+              <h1 class="text-lg font-bold">{{ column.title }}</h1>
+            </div>
             <UButton
               icon="i-lucide-trash"
               size="sm"
-              color="info"
               variant="ghost"
-              class="absolute top-2 right-2 opacity-75 hover:opacity-100"
+              class="opacity-75 hover:opacity-100"
+              @click="openDeleteModal(column.id, 'column')"
             />
+          </div>
 
-            <div>
-              <h1 class="text-base font-semibold">{{ task.title }}</h1>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {{ task.description }}
-              </p>
-            </div>
+          <div
+            class="flex flex-col flex-1 overflow-y-auto overflow-x-hidden pr-1"
+          >
+            <VueDraggable
+              v-model="column.tasks"
+              class="flex flex-col gap-2 min-h-[2rem]"
+              :animation="300"
+              item-key="id"
+              group="tasks"
+            >
+              <div
+                class="group relative cursor-move bg-white dark:bg-gray-900 shadow-sm border border-gray-200 dark:border-gray-700 p-3 rounded-lg flex flex-col gap-2 hover:border-primary-500 transition-colors"
+                :key="task.id"
+                v-for="task in column.tasks"
+              >
+                <UButton
+                  icon="i-lucide-trash"
+                  size="xs"
+                  variant="ghost"
+                  class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  @click="openDeleteModal(task.id, 'task')"
+                />
 
-            <div class="flex items-center gap-2 mt-2">
-              <UBadge size="xs">{{ task.priority }}</UBadge>
-              <UBadge size="xs" variant="solid">{{ task.status }}</UBadge>
+                <div>
+                  <h1 class="text-base font-semibold pr-6">{{ task.title }}</h1>
+                  <p
+                    class="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2"
+                  >
+                    {{ task.description }}
+                  </p>
+                </div>
+
+                <div class="flex items-center gap-2 mt-2">
+                  <UBadge size="xs">{{ task.priority }}</UBadge>
+                  <UBadge size="xs" variant="solid">{{ task.status }}</UBadge>
+                </div>
+              </div>
+            </VueDraggable>
+
+            <div
+              v-if="!column.tasks || column.tasks.length === 0"
+              class="text-gray-400 text-sm text-center italic py-6 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg mt-2"
+            >
+              No tasks yet
             </div>
           </div>
-        </VueDraggable>
 
-        <div v-else class="text-gray-400 text-sm text-center italic py-4">
-          No tasks yet
+          <UButton
+            variant="ghost"
+            class="w-full flex items-center justify-center mt-3 border border-dashed border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            @click="
+              openTaskModal({
+                columnTitle: column.title,
+                boardId: boardDataBind?.id || 0,
+                columnId: column.id,
+              })
+            "
+          >
+            <UIcon name="i-lucide-plus" class="size-4 mr-1" />
+            Add a task
+          </UButton>
         </div>
-      </div>
-    </VueDraggable>
-  </ClientOnly>
+      </VueDraggable>
+    </ClientOnly>
+  </div>
 
   <UModal :dismissible="true" v-model:open="toggleAddColumnModal">
     <template #header>
@@ -134,8 +149,8 @@
   <UModal :dismissible="true" v-model:open="toggleDeleteModal">
     <template #header>
       <div class="block">
-        <h1 class="text-xl font-bold">Delete Column {{ deleteColumnId }}</h1>
-        <p class="text-sm">Are you sure u want to delete this column?</p>
+        <h1 class="text-xl font-bold">Delete</h1>
+        <p class="text-sm">Are you sure u want to delete this</p>
       </div>
     </template>
 
@@ -171,37 +186,72 @@ import { useAddTask } from "~/composables/mutations/useAddTask";
 import { VueDraggable, type DraggableEvent } from "vue-draggable-plus";
 import useReorderColumn from "~/composables/mutations/useReorderColumn";
 import useDeleteColumn from "~/composables/mutations/useDeleteColumn";
+import useDeleteTask from "~/composables/mutations/useDeleteTask";
 
+// --- Types ---
 type SelectedColumn = {
   columnTitle: string;
   columnId: number;
   boardId: number;
 };
 
+// --- Composables ---
 const route = useRoute();
+const { onError } = useOnError();
+
+// --- State (Refs & Reactives) ---
+const boardDataBind = ref<Board>();
+const toggleAddColumnModal = ref<boolean>(false);
+const toggleAddTaskModal = ref<boolean>(false);
+const toggleDeleteModal = ref<boolean>(false);
+
 const selectedColumn = reactive({
   title: "",
   columnId: 0,
   boardId: 0,
 });
-const toggleAddColumnModal = ref<boolean>(false);
-const toggleAddTaskModal = ref<boolean>(false);
 
-const openModal = () => {
-  toggleAddColumnModal.value = true;
-};
-const openTaskModal = ({ columnTitle, columnId, boardId }: SelectedColumn) => {
-  selectedColumn.title = columnTitle;
-  selectedColumn.columnId = columnId;
-  selectedColumn.boardId = boardId;
-  toggleAddTaskModal.value = true;
-};
+const deleteObject = reactive<{
+  id: number;
+  type: "column" | "task";
+}>({
+  id: 0,
+  type: "column",
+});
 
-const boardDataBind = ref<Board>();
-// Computations
+// --- Computed ---
 const projectId = computed(() => Number(route.params.id) || 0);
+
+// --- Queries & Mutations ---
 const { data: boardData } = useQuery(useFetchBoard(Number(projectId.value)));
 
+const order = computed(() => boardData.value?.columns.length ?? 0);
+const boardId = computed(() => boardData.value?.id ?? 0);
+
+const { mutate: addTask, isPending: isTaskPending } = useAddTask(
+  Number(projectId.value),
+  toggleAddTaskModal,
+);
+
+const { mutate: deleteColumn } = useDeleteColumn({
+  projectId: Number(projectId.value),
+  toggleDeleteModal,
+});
+
+const { mutate: deleteTask } = useDeleteTask({
+  projectId: Number(projectId.value),
+  toggleDeleteModal,
+});
+
+const { isPending: isColumnPending, mutate: submitColumn } =
+  useAddColumnToBoard({
+    projectId: Number(projectId.value),
+    toggleAddColumnModal: toggleAddColumnModal,
+  });
+
+const reOrderMutation = useReorderColumn(toggleAddTaskModal);
+
+// --- Watchers ---
 watch(
   boardData,
   (value) => {
@@ -212,10 +262,24 @@ watch(
   { immediate: true },
 );
 
-const { onError } = useOnError();
+// --- Methods ---
+const openModal = () => {
+  toggleAddColumnModal.value = true;
+};
 
-const order = computed(() => boardData.value?.columns.length ?? 0);
-const boardId = computed(() => boardData.value?.id ?? 0);
+const openTaskModal = ({ columnTitle, columnId, boardId }: SelectedColumn) => {
+  selectedColumn.title = columnTitle;
+  selectedColumn.columnId = columnId;
+  selectedColumn.boardId = boardId;
+  toggleAddTaskModal.value = true;
+};
+
+const openDeleteModal = (id: number, type: "column" | "task") => {
+  deleteObject.id = id;
+  deleteObject.type = type;
+  toggleDeleteModal.value = true;
+};
+
 const onSubmitColumn = (title: string, color: string) => {
   const validated = v.safeParse(
     v.object({
@@ -236,7 +300,6 @@ const onSubmitColumn = (title: string, color: string) => {
   submitColumn({
     title: validated.output.title,
     color: validated.output.color,
-
     board_id: boardId.value,
     order: order.value,
   });
@@ -257,35 +320,17 @@ const onSubmitTask = (form: AddTask) => {
   });
 };
 
-const { mutate: addTask, isPending: isTaskPending } = useAddTask(
-  Number(projectId.value),
-  toggleAddTaskModal,
-);
-
-const deleteColumnId = ref<number>(0);
-const toggleDeleteModal = ref<boolean>(false);
-
-const openDeleteModal = (id: number) => {
-  deleteColumnId.value = id;
-  toggleDeleteModal.value = true;
-};
 const onSubmitDeleteColumn = () => {
-  console.log(deleteColumnId.value);
-  deleteColumn(deleteColumnId.value);
+  if (deleteObject.type === "column") {
+    deleteColumn(deleteObject.id);
+    return;
+  }
+
+  if (deleteObject.type === "task") {
+    deleteTask(deleteObject.id);
+    return;
+  }
 };
-const { mutate: deleteColumn } = useDeleteColumn({
-  projectId: Number(projectId.value),
-  toggleDeleteModal,
-});
-
-const { isPending: isColumnPending, mutate: submitColumn } =
-  useAddColumnToBoard({
-    projectId: Number(projectId.value),
-
-    toggleAddColumnModal: toggleAddColumnModal,
-  });
-
-const reOrderMutation = useReorderColumn(toggleAddTaskModal);
 
 const test = (e: DraggableEvent) => {
   if (e.oldIndex == null || e.newIndex == null) return;
@@ -309,6 +354,7 @@ const test = (e: DraggableEvent) => {
   reOrderMutation.mutate({ oldCol: oldCol, newCol: newCol });
 };
 
+// --- Lifecycle & Meta ---
 useHead(() => {
   return {
     title: String(projectId.value),
