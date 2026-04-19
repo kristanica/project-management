@@ -1,6 +1,19 @@
-# Nuxt Minimal Starter
+# Project Management Kanban App
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+A full-stack project management and Kanban board application built with Nuxt 3.
+
+## Tech Stack
+
+- **Frontend**: Nuxt 3, Vue 3, Nuxt UI, Vue Query (`@tanstack/vue-query`), `vue-draggable-plus`
+- **Backend & Database**: Supabase (PostgreSQL & Auth), Prisma ORM
+- **Validation**: Valibot
+
+## Features
+
+- **Authentication**: Secure user login and registration via Supabase.
+- **Dashboard**: Create and manage multiple projects.
+- **Interactive Boards**: Drag-and-drop columns and tasks.
+- **Modern UI**: Built with Nuxt UI and Tailwind CSS.
 
 ## Setup
 
