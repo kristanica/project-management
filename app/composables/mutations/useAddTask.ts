@@ -33,6 +33,7 @@ export const useAddTask = (
         description: res.data.description,
         priority: res.data.priority,
         status: res.data.status,
+        order: res.data.order,
       };
     },
     onError: (e) => {

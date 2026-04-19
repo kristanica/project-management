@@ -1,8 +1,6 @@
-import { serverSupabaseServiceRole } from "#supabase/server";
 import { safeParse } from "valibot";
 import { TaskSchemaBackend } from "~/../schema/task.schema";
 
-import { Database } from "~~/database.types";
 export default defineEventHandler(
   async (event): Promise<ServerResponseSucceed<Task> | ServerResponseFail> => {
     const body = await readBody(event);
@@ -26,7 +24,7 @@ export default defineEventHandler(
           project_id: validated.output.projectId,
           board_id: validated.output.boardId,
           status: validated.output.status,
-          order: 1,
+          order: validated.output.order,
         },
       });
 

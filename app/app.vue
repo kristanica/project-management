@@ -18,8 +18,14 @@ const route = useRoute();
 
 const isMutating = useIsMutating();
 const isFetching = useIsFetching();
+
+const exception = ["reorder-column", "order-task"];
+
 const isReordering = useIsMutating({
-  mutationKey: ["reorder-column"],
+  predicate: (mutation) => {
+    const key = mutation.options.mutationKey?.[0];
+    return typeof key === "string" && exception.includes(key);
+  },
 });
 useHead(() => {
   const pageTitle = route.meta.title as string | undefined;

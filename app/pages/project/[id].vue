@@ -15,7 +15,7 @@
 
     <ClientOnly>
       <VueDraggable
-        @end="test"
+        @end="onDragColumn"
         v-if="boardDataBind?.columns"
         v-model="boardDataBind.columns"
         class="flex flex-row gap-6 mt-5 items-start overflow-x-auto pb-4 flex-1"
@@ -34,7 +34,9 @@
           >
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-lightbulb" class="size-5" />
-              <h1 class="text-lg font-bold">{{ column.title }}</h1>
+              <h1 class="text-lg font-bold">
+                {{ column.title }}
+              </h1>
             </div>
             <UButton
               icon="i-lucide-trash"
@@ -50,15 +52,20 @@
           >
             <VueDraggable
               v-model="column.tasks"
-              class="flex flex-col gap-2 min-h-[2rem]"
+              class="flex flex-col gap-2 min-h-8"
               :animation="300"
               item-key="id"
               group="tasks"
+              :data-column-id="column.id"
+              @end="onDragTask"
             >
               <div
                 class="group relative cursor-move bg-white dark:bg-gray-900 shadow-sm border border-gray-200 dark:border-gray-700 p-3 rounded-lg flex flex-col gap-2 hover:border-primary-500 transition-colors"
                 :key="task.id"
                 v-for="task in column.tasks"
+                :data-task-id="task.id"
+                :data-task-order="task.order"
+                :data-task-title="task.title"
               >
                 <UButton
                   icon="i-lucide-trash"
@@ -69,7 +76,9 @@
                 />
 
                 <div>
-                  <h1 class="text-base font-semibold pr-6">{{ task.title }}</h1>
+                  <h1 class="text-base font-semibold pr-6">
+                    {{ task.title }}
+                  </h1>
                   <p
                     class="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2"
                   >
@@ -134,7 +143,8 @@
       <div class="block">
         <h1 class="text-xl font-bold">Create a new task</h1>
         <p class="text-sm">
-          Create a new task for the column: <i>{{ selectedColumn.title }}</i>
+          Create a new task for the column:
+          <i>{{ selectedColumn.title }} </i>
         </p>
       </div>
     </template>
@@ -183,10 +193,15 @@ import { useFetchBoard } from "~/composables/queries/useFetchBoard";
 import { useAddColumnToBoard } from "~/composables/mutations/useAddColumnToBoard";
 import Addtaskfrom from "~/components/Board/addtaskfrom.vue";
 import { useAddTask } from "~/composables/mutations/useAddTask";
-import { VueDraggable, type DraggableEvent } from "vue-draggable-plus";
+import {
+  VueDraggable,
+  type DraggableEvent,
+  type SortableEvent,
+} from "vue-draggable-plus";
 import useReorderColumn from "~/composables/mutations/useReorderColumn";
 import useDeleteColumn from "~/composables/mutations/useDeleteColumn";
 import useDeleteTask from "~/composables/mutations/useDeleteTask";
+import useOrderTask from "~/composables/mutations/useOrderTask";
 
 // --- Types ---
 type SelectedColumn = {
@@ -226,6 +241,12 @@ const projectId = computed(() => Number(route.params.id) || 0);
 const { data: boardData } = useQuery(useFetchBoard(Number(projectId.value)));
 
 const order = computed(() => boardData.value?.columns.length ?? 0);
+const taskorder = computed(() => {
+  const column = boardData.value?.columns.find(
+    (c) => c.id === selectedColumn.columnId,
+  );
+  return column?.tasks?.length ?? 0;
+});
 const boardId = computed(() => boardData.value?.id ?? 0);
 
 const { mutate: addTask, isPending: isTaskPending } = useAddTask(
@@ -250,6 +271,7 @@ const { isPending: isColumnPending, mutate: submitColumn } =
   });
 
 const reOrderMutation = useReorderColumn(toggleAddTaskModal);
+const { mutate: reOrderTask } = useOrderTask();
 
 // --- Watchers ---
 watch(
@@ -317,6 +339,9 @@ const onSubmitTask = (form: AddTask) => {
     columnId: selectedColumn.columnId,
     boardId: selectedColumn.boardId,
     projectId: Number(projectId.value),
+
+    // TMP
+    order: taskorder.value,
   });
 };
 
@@ -332,7 +357,8 @@ const onSubmitDeleteColumn = () => {
   }
 };
 
-const test = (e: DraggableEvent) => {
+// Draggable Events
+const onDragColumn = (e: DraggableEvent) => {
   if (e.oldIndex == null || e.newIndex == null) return;
   if (e.oldIndex === e.newIndex) return;
   if (!boardData.value || boardData.value?.columns.length === 0) return;
@@ -352,6 +378,44 @@ const test = (e: DraggableEvent) => {
     title: oldTmp?.title || 0,
   };
   reOrderMutation.mutate({ oldCol: oldCol, newCol: newCol });
+};
+
+const onDragTask = (e: SortableEvent) => {
+  const taskId = e.item.dataset.taskId;
+  const order = e.item.dataset.taskOrder;
+  const title = e.item.dataset.taskTitle;
+
+  const fromColumnId = e.from.dataset.columnId;
+  const toColumnId = e.to.dataset.columnId;
+
+  const oldOrder = e.oldIndex;
+  const newOrder = e.newIndex;
+
+  const from = {
+    task_id: Number(taskId),
+    order: Number(oldOrder),
+    column_id: Number(fromColumnId),
+  };
+
+  const to = {
+    task_id: Number(taskId),
+    order: Number(newOrder),
+    column_id: Number(toColumnId),
+  };
+
+  reOrderTask({ from: from, to: to });
+  console.log(`
+Being dragged:
+TaskID: ${taskId}
+Order: ${order}
+Title: ${title}
+From Column: ${fromColumnId}
+To: Column: ${toColumnId}
+
+oldOrder: ${oldOrder} 
+newOrder: ${newOrder}
+
+`);
 };
 
 // --- Lifecycle & Meta ---

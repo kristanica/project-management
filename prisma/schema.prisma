@@ -75,6 +75,7 @@ model task_assignees {
   assigned_by_id String   @db.Uuid
   task_id Int
   created_at DateTime @default(now())
+  order Int @default(0)
   task tasks @relation(fields: [task_id], references: [id], onDelete: Cascade)
 }
 

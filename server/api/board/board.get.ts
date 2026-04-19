@@ -24,12 +24,16 @@ export default defineEventHandler(
               order: true,
               color: true,
               tasks: {
+                orderBy: {
+                  order: "asc",
+                },
                 select: {
                   id: true,
                   column_id: true,
                   title: true,
                   description: true,
                   priority: true,
+                  order: true,
                   status: true,
                 },
               },

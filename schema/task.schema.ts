@@ -29,4 +29,5 @@ export const TaskSchemaBackend = v.object({
   boardId: v.number(),
   projectId: v.number(),
   columnId: v.number(),
+  order: v.number(),
 });
