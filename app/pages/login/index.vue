@@ -54,6 +54,7 @@ import type { FormSubmitEvent } from "@nuxt/ui";
 import * as v from "valibot";
 
 const supabase = useSupabaseClient();
+const user = useSupabaseUser();
 const toast = useToast();
 
 const loginSchema = v.object({
@@ -77,9 +78,10 @@ const loginForm = reactive<Omit<formType, "confirmPassword">>({
 
 const onSubmit = async (event: FormSubmitEvent<Schema>) => {
   const parsedInfo = v.parse(loginSchema, event.data);
+
   try {
     const {
-      data: { user },
+      data: { user: authUser },
       error,
     } = await supabase.auth.signInWithPassword({
       email: parsedInfo.email,
@@ -94,17 +96,21 @@ const onSubmit = async (event: FormSubmitEvent<Schema>) => {
       });
       return;
     }
-    if (user) {
+
+    if (authUser) {
       toast.add({
-        title: "Login succesfully!",
+        title: "Login successful!",
         description: "Welcome123",
         color: "success",
       });
-      await navigateTo("/dashboard", { replace: true });
+
+      setTimeout(() => {
+        navigateTo("/dashboard", { replace: true });
+      }, 500);
     }
   } catch (e) {
     toast.add({
-      title: "Failed Account Creation!",
+      title: "Login Error!",
       description: "Something went wrong...",
       color: "error",
     });

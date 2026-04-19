@@ -1,6 +1,5 @@
 import { queryOptions } from "@tanstack/vue-query";
-import { safeParse } from "valibot";
-import { BoardSchema } from "~/../schema/board.schema";
+
 export const useFetchBoard = (projectId: number) =>
   queryOptions({
     queryKey: ["project" + projectId],

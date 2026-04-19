@@ -22,6 +22,7 @@ export default defineEventHandler(
               id: true,
               title: true,
               order: true,
+              color: true,
               tasks: {
                 select: {
                   id: true,

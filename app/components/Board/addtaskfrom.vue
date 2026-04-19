@@ -4,9 +4,12 @@ import type { FormSubmitEvent } from "@nuxt/ui";
 const taskForm = reactive<AddTask>({
   title: "",
   description: "",
-  priority: "",
-  status: "",
+  priority: "Low",
+  status: "Pending",
 });
+
+const priority = ["High", "Medium", "Low"];
+const status = ["Done", "Pending", "In Progress"];
 
 defineProps<{ isTaskPending: boolean }>();
 
@@ -31,10 +34,20 @@ const submit = (e: FormSubmitEvent<AddTask>) => {
     </UFormField>
 
     <UFormField label="Priority">
-      <UInput v-model="taskForm.priority" class="w-full" required />
+      <USelect
+        :items="priority"
+        v-model="taskForm.priority"
+        class="w-full"
+        required
+      />
     </UFormField>
     <UFormField label="Status">
-      <UInput v-model="taskForm.status" class="w-full" required />
+      <USelect
+        :items="status"
+        v-model="taskForm.status"
+        class="w-full"
+        required
+      />
     </UFormField>
 
     <UButton

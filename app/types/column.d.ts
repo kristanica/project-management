@@ -2,6 +2,7 @@ type Columns = {
   id: number;
   title: string;
   order: number;
+  color: string;
   tasks: Task[];
 };
 

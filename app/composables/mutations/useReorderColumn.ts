@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/vue-query";
 
-export default function useReorderColumn() {
+export default function useReorderColumn(toggleAddTaskModal: Ref<boolean>) {
   return useMutation({
     mutationKey: ["reorder-column"],
     mutationFn: async ({ oldCol, newCol }: ReOrder) => {
@@ -11,6 +11,10 @@ export default function useReorderColumn() {
           newCol,
         },
       });
+    },
+
+    onSuccess: () => {
+      toggleAddTaskModal.value = false;
     },
   });
 }

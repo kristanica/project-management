@@ -6,7 +6,10 @@ type UseAddTask = {
   projectId: number;
 };
 
-export const useAddTask = (projectId: number) => {
+export const useAddTask = (
+  projectId: number,
+  toggleAddTaskModal: Ref<boolean>,
+) => {
   const qc = useQueryClient();
 
   const { manualError } = useOnError();
@@ -39,6 +42,7 @@ export const useAddTask = (projectId: number) => {
 
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["project" + projectId] });
+      toggleAddTaskModal.value = false;
     },
   });
 };

@@ -10,6 +10,7 @@ export default defineEventHandler(
         id: number;
         title: string;
         board_id: number;
+        color: string;
       }>
     | ServerResponseFail
   > => {
@@ -31,6 +32,7 @@ export default defineEventHandler(
           title: validated.output.title,
           board_id: validated.output.board_id,
           order: validated.output.order,
+          color: validated.output.color,
         },
       });
 

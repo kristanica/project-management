@@ -13,10 +13,12 @@ export const useAddColumnToBoard = ({
       title,
       board_id,
       order,
+      color,
     }: {
       title: string;
       board_id: number;
       order: number;
+      color: string;
     }) => {
       console.log(title, board_id, order);
       const res = await $fetch<ServerResponseSucceed<Columns>>(
@@ -27,11 +29,13 @@ export const useAddColumnToBoard = ({
             board_id: board_id,
             title: title,
             order: order,
+            color: color,
           },
         },
       );
 
       if (res.statusCode !== 201) {
+        console.log(color);
         console.log(res);
         throw new Error(String(res.data));
       }
