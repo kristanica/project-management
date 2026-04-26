@@ -18,6 +18,7 @@
         @end="onDragColumn"
         v-if="boardDataBind?.columns"
         v-model="boardDataBind.columns"
+        `
         class="flex flex-row gap-6 mt-5 items-start overflow-x-auto pb-4 flex-1"
         item-key="id"
         :animation="300"
@@ -38,13 +39,14 @@
                 {{ column.title }}
               </h1>
             </div>
-            <UButton
-              icon="i-lucide-trash"
-              size="sm"
-              variant="ghost"
-              class="opacity-75 hover:opacity-100"
-              @click="openDeleteModal(column.id, 'column')"
-            />
+            <UDropdownMenu
+              :items="dropDown({ type: 'column', id: column.id, data: column })"
+              :ui="{
+                content: 'w-20',
+              }"
+            >
+              <UButton icon="i-lucide-menu" color="neutral" variant="outline" />
+            </UDropdownMenu>
           </div>
 
           <div
@@ -67,13 +69,19 @@
                 :data-task-order="task.order"
                 :data-task-title="task.title"
               >
-                <UButton
-                  icon="i-lucide-trash"
-                  size="xs"
-                  variant="ghost"
-                  class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                  @click="openDeleteModal(task.id, 'task')"
-                />
+                <UDropdownMenu
+                  class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  :items="dropDown({ type: 'task', id: task.id, data: task })"
+                  :ui="{
+                    content: 'w-20',
+                  }"
+                >
+                  <UButton
+                    icon="i-lucide-menu"
+                    color="neutral"
+                    variant="outline"
+                  />
+                </UDropdownMenu>
 
                 <div>
                   <h1 class="text-base font-semibold pr-6">
@@ -120,6 +128,7 @@
     </ClientOnly>
   </div>
 
+  <!-- Add Column -->
   <UModal :dismissible="true" v-model:open="toggleAddColumnModal">
     <template #header>
       <div class="block">
@@ -132,7 +141,9 @@
     </template>
     <template #body>
       <Addcolumnform
+        :initial-state="columnRef"
         :isColumnPending="isColumnPending"
+        @on-update="onUpdateColumn"
         @on-submit="onSubmitColumn"
       ></Addcolumnform>
     </template>
@@ -187,7 +198,9 @@ import { ref, reactive, computed, watch } from "vue";
 import { useRoute } from "vue-router";
 import Header from "~/components/Board/header.vue";
 import * as v from "valibot";
-import Addcolumnform from "~/components/Board/addcolumnform.vue";
+import Addcolumnform, {
+  type initialState,
+} from "~/components/Board/addcolumnform.vue";
 import { TaskSchema } from "~/../schema/task.schema";
 import { useFetchBoard } from "~/composables/queries/useFetchBoard";
 import { useAddColumnToBoard } from "~/composables/mutations/useAddColumnToBoard";
@@ -202,6 +215,8 @@ import useReorderColumn from "~/composables/mutations/useReorderColumn";
 import useDeleteColumn from "~/composables/mutations/useDeleteColumn";
 import useDeleteTask from "~/composables/mutations/useDeleteTask";
 import useOrderTask from "~/composables/mutations/useOrderTask";
+import type { DropdownMenuItem } from "@nuxt/ui";
+import { useUpdateColumn } from "~/composables/mutations/useUpdateColumn";
 
 // --- Types ---
 type SelectedColumn = {
@@ -233,6 +248,43 @@ const deleteObject = reactive<{
   id: 0,
   type: "column",
 });
+
+// Constants
+const columnRef = reactive<initialState>({
+  column_id: 0,
+  title: "",
+  color: "#FFFFFF",
+  action: "create",
+});
+
+const dropDown = (params: DropDownParams): DropdownMenuItem[] => {
+  return [
+    {
+      label: "Delete",
+      icon: "i-lucide-trash",
+      onSelect() {
+        openDeleteModal(params.id, params.type);
+      },
+    },
+    {
+      label: "edit",
+      icon: "i-lucide-pencil",
+      onSelect() {
+        if (params.type === "column") {
+          columnRef.title = params.data.title;
+          columnRef.color = params.data.color;
+          columnRef.column_id = params.data.id;
+          columnRef.action = "edit";
+          toggleAddColumnModal.value = true;
+          return;
+        }
+        if (params.type === "task") {
+          console.log(params.data.priority);
+        }
+      },
+    },
+  ];
+};
 
 // --- Computed ---
 const projectId = computed(() => Number(route.params.id) || 0);
@@ -272,6 +324,10 @@ const { isPending: isColumnPending, mutate: submitColumn } =
 
 const reOrderMutation = useReorderColumn(toggleAddTaskModal);
 const { mutate: reOrderTask } = useOrderTask();
+const { mutate: updateColumn } = useUpdateColumn({
+  projectId: Number(projectId.value),
+  toggleAddColumnModal: toggleAddColumnModal,
+});
 
 // --- Watchers ---
 watch(
@@ -286,6 +342,10 @@ watch(
 
 // --- Methods ---
 const openModal = () => {
+  columnRef.color = "#FFFFFF";
+  columnRef.title = "";
+  columnRef.action = "create";
+  columnRef.column_id = 0;
   toggleAddColumnModal.value = true;
 };
 
@@ -327,6 +387,32 @@ const onSubmitColumn = (title: string, color: string) => {
   });
 };
 
+const onUpdateColumn = (title: string, color: string) => {
+  console.log(title, color, columnRef.column_id);
+
+  const validated = v.safeParse(
+    v.object({
+      title: v.pipe(
+        v.string(),
+        v.minLength(5, "Must be greater than 5 character"),
+        v.maxLength(20, "Must be less than 20 Characters"),
+      ),
+      color: v.string(),
+    }),
+    { title, color },
+  );
+
+  if (!validated.success) {
+    onError({ errors: validated.issues });
+    return;
+  }
+
+  updateColumn({
+    title: title,
+    color: color,
+    column_id: columnRef.column_id || 0,
+  });
+};
 const onSubmitTask = (form: AddTask) => {
   const validated = v.safeParse(TaskSchema, form);
   if (!validated.success) {
@@ -340,7 +426,6 @@ const onSubmitTask = (form: AddTask) => {
     boardId: selectedColumn.boardId,
     projectId: Number(projectId.value),
 
-    // TMP
     order: taskorder.value,
   });
 };
@@ -381,9 +466,7 @@ const onDragColumn = (e: DraggableEvent) => {
 };
 
 const onDragTask = (e: SortableEvent) => {
-  const taskId = e.item.dataset.taskId;
-  const order = e.item.dataset.taskOrder;
-  const title = e.item.dataset.taskTitle;
+  const { taskId, order, title } = e.item.dataset;
 
   const fromColumnId = e.from.dataset.columnId;
   const toColumnId = e.to.dataset.columnId;
@@ -412,7 +495,7 @@ Title: ${title}
 From Column: ${fromColumnId}
 To: Column: ${toColumnId}
 
-oldOrder: ${oldOrder} 
+oldOrder: ${oldOrder}
 newOrder: ${newOrder}
 
 `);

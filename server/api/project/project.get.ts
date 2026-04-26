@@ -11,24 +11,37 @@ export default defineEventHandler(async (event) => {
     const postPerPage = 6;
     const from = (currentPage - 1) * currentPage;
     const to = from + postPerPage - 1;
-
-    const [data, count] = await Promise.all([
-      prisma.projects.findMany({
-        where: { user_id: String(user?.sub) },
+    if (!user?.sub) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: "Unauthorized",
+      });
+    }
+    const { projects, count } = await prisma.$transaction(async (tx) => {
+      const projects = await tx.projects.findMany({
+        where: {
+          user_id: String(user.sub),
+        },
         select: {
           id: true,
           title: true,
           description: true,
         },
-        orderBy: { created_at: "desc" },
+        orderBy: {
+          created_at: "desc",
+        },
         skip: from,
         take: to - from + 1,
-      }),
-      prisma.projects.count({
+      });
+
+      const count = await tx.projects.count({
         where: { user_id: String(user?.sub) },
-      }),
-    ]);
-    const safeData = toSafeData(data);
+      });
+
+      return { projects, count };
+    });
+
+    const safeData = toSafeData(projects);
     return {
       title: "Data retrieved",
       data: safeData,
@@ -47,3 +60,10 @@ export default defineEventHandler(async (event) => {
     }
   }
 });
+
+//  ((EXISTS ( SELECT 1
+//    FROM (projects p
+//      JOIN project_members pm ON ((pm.project_id = p.id)))
+//   WHERE (pm.user_id = ( SELECT auth.uid() AS uid))
+//  LIMIT 1)) OR (EXISTS ( SELECT 1
+//    FROM projects)));

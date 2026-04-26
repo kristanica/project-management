@@ -22,3 +22,15 @@ type ReOrder = {
   oldCol: ReOrderValue;
   newCol: ReOrderValue;
 };
+
+type DropDownParams =
+  | {
+      type: "column";
+      id: number;
+      data: Omit<Columns, "tasks">;
+    }
+  | {
+      type: "task";
+      id: number;
+      data: Task;
+    };
