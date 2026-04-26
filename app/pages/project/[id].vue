@@ -379,6 +379,7 @@ const onSubmitColumn = (title: string, color: string) => {
     onError({ errors: validated.issues });
     return;
   }
+
   submitColumn({
     title: validated.output.title,
     color: validated.output.color,

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { user } from "#build/ui";
 import type { FormSubmitEvent } from "@nuxt/ui";
 
 import * as v from "valibot";
@@ -7,6 +8,10 @@ const supabase = useSupabaseClient();
 
 const registerSchema = v.pipe(
   v.object({
+    username: v.pipe(
+      v.string("Username must be a string"),
+      v.minLength(5, "Username must have 5 characters"),
+    ),
     email: v.pipe(
       v.string("Email must be a string"),
       v.email("Invalid Email"),
@@ -39,6 +44,7 @@ const registerForm = reactive<formType>({
   email: "",
   password: "",
   confirmPassword: "",
+  username: "",
 });
 
 const onSubmit = async (payload: FormSubmitEvent<SchemaType>) => {
@@ -60,6 +66,14 @@ const onSubmit = async (payload: FormSubmitEvent<SchemaType>) => {
     title: "Account Created",
     description: "Use your credentials to proceed",
     color: "success",
+  });
+
+  await $fetch("/api/register/register", {
+    method: "POST",
+    body: {
+      id: data.user?.id,
+      username: payload.data.username,
+    },
   });
 
   navigateTo("/login");
@@ -86,6 +100,13 @@ definePageMeta({
         @submit="onSubmit"
         class="flex flex-col gap-5"
       >
+        <UFormField label="Username">
+          <UInput
+            v-model="registerForm.username"
+            placeholder="Enter your username"
+            class="w-full"
+          />
+        </UFormField>
         <UFormField label="Email">
           <UInput
             v-model="registerForm.email"

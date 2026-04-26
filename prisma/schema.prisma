@@ -6,6 +6,13 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+
+model profiles  {
+  id String @id @db.Uuid
+  username String
+  created_at DateTime @default(now())
+}
 model projects {
   id          Int   @id @default(autoincrement())
   title       String
